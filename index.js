@@ -1,49 +1,23 @@
-const { ApolloServer } = require('apollo-server');
+const { ApolloServer } = require('apollo-server-express');
+const express = require('express');
+const expressPlayground = require('graphql-playground-middleware-express').default;
+const { readFileSync } = require('fs');
 
-let id = 0;
-const photos = [];
+const typeDefs = readFileSync('./typeDefs.graphql', 'UTF-8')
+const resolvers = require('./resolvers')
 
-const typeDefs = `
-    type Photo {
-        id: ID!
-        url: String!
-        name: String!
-        description: String
-    }
-    type Query {
-        totalPhotos: Int!
-        allPhotos: [Photo!]!
-    }
-    type Mutation {
-        postPhoto(name: String! description: String): Photo!
-    }
-`
-
-const resolvers = {
-    Query: {
-        totalPhotos: () => photos.length,
-        allPhotos: () => photos
-    },
-    Mutation: {
-        postPhoto: (parent, args) => {
-            const newPhoto = {
-                id: id++,
-                ...args
-            }
-
-            photos.push(newPhoto);
-
-            return newPhoto;
-        }
-    },
-    Photo: {
-        url: parent => `http://yoursite.com/img/${parent.id}.jpg`
-    }
-}
+const app = express();
 
 const server = new ApolloServer({
     typeDefs,
     resolvers
 })
 
-server.listen().then(({url}) => console.log('GraphQL Server running on' + url));
+server.applyMiddleware({app});
+
+app.get('/', (req, res) => res.end('Welcome to the PhotoShare API'))
+app.get('/playground', expressPlayground({ endpoint: '/graphql' }));
+// 5. Listen on a specific port
+app.listen({ port: 4000 }, () =>
+    console.log(`GraphQL Server running @ http://localhost:4000${server.graphqlPath}`)
+)
