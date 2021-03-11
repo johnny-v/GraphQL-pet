@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon -e js,json,graphql"
+    "start": "micro"
   },
   "repository": {
     "type": "git",
@@ -19,10 +19,16 @@
   },
   "homepage": "https://github.com/johnny-v/GraphQL-pet#readme",
   "dependencies": {
-    "apollo-server-express": "^2.21.1",
-    "express": "^4.17.1",
+    "apollo-server-micro": "^2.21.1",
     "graphql": "^15.5.0",
     "graphql-playground-middleware-express": "^1.7.22",
+    "graphql-tools": "^4.0.8",
+    "mongodb": "^3.6.4",
     "nodemon": "^2.0.7"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.13.10",
+    "@babel/node": "^7.13.10",
+    "dotenv": "^8.2.0"
   }
 }

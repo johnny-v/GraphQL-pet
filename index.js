@@ -1,23 +1,70 @@
-const { ApolloServer } = require('apollo-server-express');
-const express = require('express');
-const expressPlayground = require('graphql-playground-middleware-express').default;
-const { readFileSync } = require('fs');
+const { ApolloServer, gql, makeExecutableSchema } = require('apollo-server-micro');
+const { MongoClient } = require('mongodb');
 
-const typeDefs = readFileSync('./typeDefs.graphql', 'UTF-8')
-const resolvers = require('./resolvers')
+const typeDefs = gql`
+    type Query {
+        totalListingsAndReviews: Int!
+        allListings: [Listing!]!
+    }
+    type Listing {
+        _id: Int!
+        listing_url: String!
+        name: String!
+        summary: String!
+        space: String!
+        description: String!
+        neighborhood_overview: String!
+        notes: String!
+        transit: String!
+        access: String!
+        interaction: String!
+        house_rules: String!
+        property_type: String!
+        room_type: String!
+        bed_type: String!
+        minimum_nights: String!
+        maximum_nights: String!
+        cancellation_policy: String!
+        accommodates: Int!
+        bedrooms: Int!
+        beds: Int!
+        number_of_reviews: Int!
+        bathrooms: Int!
+    }
+`
+const resolvers = {
+    Query: {
+        totalListingsAndReviews: (parent, args, context) => context.db.collection('listingsAndReviews').estimatedDocumentCount(),
+        allListings: (parent, args, context) => context.db.collection('listingsAndReviews').find().toArray()
+    }
+}
 
-const app = express();
-
-const server = new ApolloServer({
+const schema = makeExecutableSchema({
     typeDefs,
     resolvers
-})
+});
 
-server.applyMiddleware({app});
+let db;
+const server = new ApolloServer({
+    schema,
+    context: async () => {
+        if (!db) {
+            try {
+                const dbClient = new MongoClient(, {
+                    useNewUrlParser: true,
+                    useUnifiedTopology: true,
+                })
 
-app.get('/', (req, res) => res.end('Welcome to the PhotoShare API'))
-app.get('/playground', expressPlayground({ endpoint: '/graphql' }));
-// 5. Listen on a specific port
-app.listen({ port: 4000 }, () =>
-    console.log(`GraphQL Server running @ http://localhost:4000${server.graphqlPath}`)
-)
+                if (!dbClient.isConnected()) await dbClient.connect()
+                db = dbClient.db('sample_airbnb') // database name
+
+            } catch (e) {
+                console.log('--->error while connecting via graphql context (db)', e)
+            }
+        }
+
+        return { db }
+    }
+});
+
+module.exports = server.createHandler({ path: '/api/graphql' });
